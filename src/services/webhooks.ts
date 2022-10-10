@@ -1,8 +1,10 @@
 import axios from "axios";
-import { BaseService } from "medusa-interfaces";
+import { NotificationService } from "medusa-interfaces";
+import { Timestamp } from "typeorm";
 
-class WebhooksService extends BaseService {
-  options_: any;
+class WebhooksService extends NotificationService {
+  [x: string]: any;
+  static identifier = "webhooks";
   /**
    * @param {Object} options - configuration for this plugin defined in `medusa-config.js`
    * example for this plugin:
@@ -16,10 +18,60 @@ class WebhooksService extends BaseService {
    * 	 ]
    * }
    */
-  constructor({}: object, options: object) {
+  constructor({ orderService }, options) {
     super();
 
+    this.orderService_ = orderService;
     this.options_ = options;
+  }
+
+  async handleOrderPlaced(id) {
+    const order = await this.orderService_.retrieve(id, {
+      select: [
+        "shipping_total",
+        "discount_total",
+        "tax_total",
+        "refunded_total",
+        "gift_card_total",
+        "subtotal",
+        "total",
+      ],
+      relations: [
+        "customer",
+        "billing_address",
+        "shipping_address",
+        "discounts",
+        "discounts.rule",
+        "shipping_methods",
+        "shipping_methods.shipping_option",
+        "payments",
+        "fulfillments",
+        "returns",
+        "gift_cards",
+        "gift_card_transactions",
+      ],
+    });
+
+    console.log("handleOrderPlaced", order);
+
+    return order;
+  }
+
+  async fetchData(event, eventData) {
+    switch (event) {
+      case "order.placed":
+        const data = await this.handleOrderPlaced(eventData.id);
+        console.log("fetchData", data);
+        return data;
+      default:
+        return {};
+    }
+  }
+
+  async sendNotification(event, eventData) {
+    const data = await this.fetchData(event, eventData);
+    console.log("sendNotification", data);
+    return await this.postWebhook(data);
   }
 
   /**
@@ -28,9 +80,15 @@ class WebhooksService extends BaseService {
    * @returns Promise<AxiosResponse<any, any>>
    */
   async postWebhook(data) {
-    return axios.post(this.options_.webhook_url, data, {
-      headers: this.options_.webhook_headers,
-    });
+    console.log("postWebhook", data);
+    return axios.post(
+      this.options_.webhook_url ??
+        "https://play.svix.com/in/e_HyNsLihQrQaJgTNHhUbRMJ6I4Ng/",
+      data,
+      {
+        headers: this.options_.webhook_headers,
+      }
+    );
   }
 }
 

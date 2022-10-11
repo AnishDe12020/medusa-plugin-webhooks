@@ -1,6 +1,5 @@
 import axios from "axios";
 import { NotificationService } from "medusa-interfaces";
-import { Timestamp } from "typeorm";
 
 class WebhooksService extends NotificationService {
   [x: string]: any;
@@ -25,7 +24,7 @@ class WebhooksService extends NotificationService {
     this.options_ = options;
   }
 
-  async handleOrderPlaced(id) {
+  async handleOrderEvents(id) {
     const order = await this.orderService_.retrieve(id, {
       select: [
         "shipping_total",
@@ -60,9 +59,9 @@ class WebhooksService extends NotificationService {
   async fetchData(event, eventData) {
     switch (event) {
       case "order.placed":
-        const data = await this.handleOrderPlaced(eventData.id);
-        console.log("fetchData", data);
-        return data;
+      case "order.updated":
+      case "order.canceled":
+        return await this.handleOrderEvents(eventData.id);
       default:
         return {};
     }
@@ -70,8 +69,7 @@ class WebhooksService extends NotificationService {
 
   async sendNotification(event, eventData) {
     const data = await this.fetchData(event, eventData);
-    console.log("sendNotification", data);
-    return await this.postWebhook(data);
+    return await this.postWebhook({ event: event, data: data });
   }
 
   /**

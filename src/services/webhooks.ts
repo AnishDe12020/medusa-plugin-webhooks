@@ -75,18 +75,14 @@ class WebhooksService extends NotificationService {
   /**
    *
    * @param {Object} data - data to be passed in to the body of the webhook
+   * @param {string} overrideUrl - optional override url for the webhook
+   * @param {Object} overrideHeaders - optional override headers for the webhook
    * @returns Promise<AxiosResponse<any, any>>
    */
-  async postWebhook(data) {
-    console.log("postWebhook", data);
-    return axios.post(
-      this.options_.webhook_url ??
-        "https://play.svix.com/in/e_HyNsLihQrQaJgTNHhUbRMJ6I4Ng/",
-      data,
-      {
-        headers: this.options_.webhook_headers,
-      }
-    );
+  async postWebhook(data, overrideUrl?: string, overrideHeaders?: any) {
+    return axios.post(overrideUrl ?? this.options_.webhook_url, data, {
+      headers: overrideHeaders ?? this.options_.webhook_headers,
+    });
   }
 }
 

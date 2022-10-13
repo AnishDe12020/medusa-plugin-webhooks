@@ -1,8 +1,28 @@
 import axios from "axios";
 import { NotificationService } from "medusa-interfaces";
 
+type EventConfig = {
+  enabled: boolean;
+  overrideUrl?: string;
+  overrideHeaders?: { [key: string]: string };
+};
+
+// enum Event {
+//   "order.placed",
+//   "order.updated",
+//   "order.completed",
+//   "order.canceled",
+// }
+
+type Options = {
+  webhook_url: string;
+  webhook_headers: { [key: string]: string };
+  webhook_config: { [key: string]: EventConfig };
+};
+
 class WebhooksService extends NotificationService {
-  [x: string]: any;
+  options_: Options;
+  orderService_: any;
   static identifier = "webhooks";
   /**
    * @param {Object} options - configuration for this plugin defined in `medusa-config.js`
@@ -60,6 +80,7 @@ class WebhooksService extends NotificationService {
     switch (event) {
       case "order.placed":
       case "order.updated":
+      case "order.completed":
       case "order.canceled":
         return await this.handleOrderEvents(eventData.id);
       default:
@@ -68,8 +89,19 @@ class WebhooksService extends NotificationService {
   }
 
   async sendNotification(event, eventData) {
+    if (
+      !this.options_.webhook_config[event] ||
+      this.options_.webhook_config[event].enabled === false
+    ) {
+      return;
+    }
+
     const data = await this.fetchData(event, eventData);
-    return await this.postWebhook({ event: event, data: data });
+    return await this.postWebhook(
+      { event: event, data: data },
+      this.options_.webhook_config[event].overrideUrl ?? null,
+      this.options_.webhook_config[event].overrideHeaders ?? null
+    );
   }
 
   /**

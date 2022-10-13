@@ -40,8 +40,8 @@ class WebhooksService extends NotificationService {
   constructor({ orderService }, options) {
     super();
 
-    this.orderService_ = orderService;
     this.options_ = options;
+    this.orderService_ = orderService;
   }
 
   async handleOrderEvents(id) {
@@ -89,18 +89,25 @@ class WebhooksService extends NotificationService {
   }
 
   async sendNotification(event, eventData) {
-    if (
-      !this.options_.webhook_config[event] ||
-      this.options_.webhook_config[event].enabled === false
-    ) {
-      return;
-    }
+    console.log("options", this.options_);
+    console.log("config", this.options_?.webhook_config);
+    // if (
+    //   !this.options_.webhook_config[event] ||
+    //   this.options_.webhook_config[event].enabled === false
+    // ) {
+    //   return;
+    // }
 
     const data = await this.fetchData(event, eventData);
     return await this.postWebhook(
-      { event: event, data: data },
-      this.options_.webhook_config[event].overrideUrl ?? null,
-      this.options_.webhook_config[event].overrideHeaders ?? null
+      {
+        event: event,
+        data: data,
+        options: this.options_,
+        config: this.options_?.webhook_config ?? null,
+      }
+      // this.options_.webhook_config[event].overrideUrl,
+      // this.options_.webhook_config[event].overrideHeaders
     );
   }
 

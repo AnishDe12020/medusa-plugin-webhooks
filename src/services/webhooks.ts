@@ -7,17 +7,17 @@ type EventConfig = {
   overrideHeaders?: { [key: string]: string };
 };
 
-// enum Event {
-//   "order.placed",
-//   "order.updated",
-//   "order.completed",
-//   "order.canceled",
-// }
+enum Event {
+  "order.placed",
+  "order.updated",
+  "order.completed",
+  "order.canceled",
+}
 
 type Options = {
   webhook_url: string;
   webhook_headers: { [key: string]: string };
-  webhook_config: { [key: string]: EventConfig };
+  webhook_config: { [key in Event]: EventConfig };
 };
 
 class WebhooksService extends NotificationService {
@@ -89,14 +89,12 @@ class WebhooksService extends NotificationService {
   }
 
   async sendNotification(event, eventData) {
-    console.log("options", this.options_);
-    console.log("config", this.options_?.webhook_config);
-    // if (
-    //   !this.options_.webhook_config[event] ||
-    //   this.options_.webhook_config[event].enabled === false
-    // ) {
-    //   return;
-    // }
+    if (
+      !this.options_.webhook_config[event] ||
+      this.options_.webhook_config[event].enabled === false
+    ) {
+      return;
+    }
 
     const data = await this.fetchData(event, eventData);
     return await this.postWebhook(
@@ -105,9 +103,9 @@ class WebhooksService extends NotificationService {
         data: data,
         options: this.options_,
         config: this.options_?.webhook_config ?? null,
-      }
-      // this.options_.webhook_config[event].overrideUrl,
-      // this.options_.webhook_config[event].overrideHeaders
+      },
+      this.options_.webhook_config[event].overrideUrl,
+      this.options_.webhook_config[event].overrideHeaders
     );
   }
 
